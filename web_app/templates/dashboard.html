@@ -1,0 +1,1136 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>SCHOOL SAFETY AI</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- THANH ĐIỀU HƯỚNG -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">S</div>
+            <div>
+                <h2>SCHOOL SAFETY</h2>
+                <span>AI MONITORING SYSTEM</span>
+            </div>
+        </div>
+
+        <div class="menu-title">MENU CHÍNH</div>
+
+        <a href="/" class="menu-item active">
+            ▦ &nbsp; Tổng quan
+        </a>
+
+        <a href="#monitoring" class="menu-item">
+            ◉ &nbsp; Giám sát
+        </a>
+
+        <a href="/alerts" class="menu-item">
+            ⚑ &nbsp; Cảnh báo
+        </a>
+
+        <!-- <a href="/alerts" class="menu-item">
+            ▣ &nbsp; Video minh chứng
+        </a> -->
+
+        <a href="/cameras" class="menu-item">
+            📷 &nbsp; Quản lý camera
+        </a>
+
+        <div class="sidebar-bottom">
+            <div class="system-status">
+                <span class="status-dot"></span>
+                Hệ thống sẵn sàng
+            </div>
+            <small>Phiên bản thử nghiệm 1.0</small>
+        </div>
+    </aside>
+
+    <!-- NỘI DUNG CHÍNH -->
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <h1>Tổng quan hệ thống</h1>
+                <p>Hệ thống hỗ trợ giám sát an toàn trường học bằng AI</p>
+            </div>
+            <div class="topbar-actions">
+            <button class="reload-button" onclick="location.reload()">
+                <span>↻</span> Tải lại
+            </button>
+
+            <div class="user-info">
+                <div class="user-account">
+                    <div class="avatar">GT</div>
+                    <span>
+                        Xin chào, {{ session["user"]["full_name"] or session["user"]["username"] }}
+                    </span>
+
+                    <form method="POST" action="{{ url_for('logout') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="logout-btn">
+                            Đăng xuất
+                        </button>
+                    </form>
+                </div>
+            </div>
+</div>
+        
+        </header>
+
+        <!-- GIỚI THIỆU -->
+        <section class="welcome">
+            <div>
+                <span class="eyebrow">SCHOOL SAFETY AI</span>
+                <h2>Giám sát an toàn học đường</h2>
+                <p>
+                    Theo dõi tình hình, tiếp nhận cảnh báo và kiểm tra
+                    các tình huống cần được quan tâm.
+                </p>
+            </div>
+            <div class="welcome-icon">⌖</div>
+        </section>
+
+        <!-- THỐNG KÊ -->
+        <section class="section">
+            <h3>Thông tin hệ thống</h3>
+
+            <div class="stats-grid">
+
+                <div class="stat-card">
+                    <span class="stat-icon blue">▣</span>
+                    <p>Tổng số cảnh báo</p>
+                    <h2>{{ statistics.total_alerts }}</h2>
+                    <small>Tổng dữ liệu đã ghi nhận</small>
+                </div>
+
+                <div class="stat-card">
+                    <span class="stat-icon orange">⚑</span>
+                    <p>Cảnh báo mới</p>
+                    <h2>{{ statistics.new_alerts }}</h2>
+                    <small>Chờ giám thị kiểm tra</small>
+                </div>
+
+                <div class="stat-card">
+                    <span class="stat-icon blue">◷</span>
+                    <p>Đang kiểm tra</p>
+                    <h2>{{ statistics.checking_alerts }}</h2>
+                    <small>Đang được xử lý</small>
+                </div>
+
+                <div class="stat-card">
+                    <span class="stat-icon green">✓</span>
+                    <p>Đã xác minh</p>
+                    <h2>{{ statistics.verified_alerts }}</h2>
+                    <small>Đã có kết quả kiểm tra</small>
+                </div>
+
+                <div class="stat-card">
+                    <span class="stat-icon green">▤</span>
+                    <p>Ảnh minh chứng</p>
+                    <h2>{{ statistics.saved_images }}</h2>
+                    <small>Ảnh đã lưu trong hệ thống</small>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- KHU VỰC GIÁM SÁT -->
+        <section class="section" id="monitoring">
+
+            <div class="section-heading">
+                <h3>Khu vực giám sát</h3>
+
+                <span class="tag" id="monitor-status-badge">
+                    ĐANG KẾT NỐI...
+                </span>
+            </div>
+
+            <div class="monitor-card">
+                
+                <!-- ĐIỀU KHIỂN GIÁM SÁT -->
+                <div class="monitor-controls"
+                    style="padding:20px; border-bottom:1px solid #e5e7eb;">
+
+                    <div style="margin-bottom:15px;">
+                        <strong>ĐIỀU KHIỂN GIÁM SÁT</strong>
+                        <p style="color:#64748b; font-size:13px; margin-top:5px;">
+                            Lựa chọn nguồn đầu vào và điều khiển hệ thống AI.
+                        </p>
+                    </div>
+
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:end;">
+
+                        <!-- LOẠI NGUỒN -->
+                        <div style="flex:1; min-width:180px;">
+                            <label for="source-type"
+                                style="display:block; margin-bottom:7px; font-weight:600;">
+                                Loại nguồn
+                            </label>
+
+                            <select id="source-type"
+                                    onchange="changeSourceType()"
+                                    style="width:100%; padding:11px; border:1px solid #d1d5db; border-radius:8px;">
+                                <option value="camera">Camera nội bộ</option>
+                                <option value="rtsp">Camera RTSP</option>
+                                <option value="video">Video có sẵn</option>
+                            </select>
+                        </div>
+
+                        <!-- CHỌN CAMERA -->
+                        <div id="camera-selection"
+                             style="flex:1; min-width:180px;">
+
+                            <label for="camera-source"
+                                style="display:block; margin-bottom:7px; font-weight:600;">
+                                Chọn camera
+                            </label>
+
+                            <select id="camera-source">
+                                <option value="">Đang tải danh sách camera...</option>
+                            </select>
+                        </div>
+
+                        <!-- CHỌN CAMERA RTSP -->
+                        <div id="rtsp-selection"
+                            style="flex:1; min-width:180px; display:none;">
+
+                            <label for="rtsp-source"
+                                style="display:block; margin-bottom:7px; font-weight:600;">
+                                Chọn camera RTSP
+                            </label>
+
+                            <select id="rtsp-source"
+                                    style="width:100%; padding:11px; border:1px solid #d1d5db; border-radius:8px;">
+                                <option value="">Đang tải danh sách camera RTSP...</option>
+                            </select>
+                        </div>
+
+                        <!-- CHỌN VIDEO -->
+                        <div id="video-selection"
+                            style="flex:1; min-width:180px; display:none;">
+
+                            <label for="video-source"
+                                style="display:block; margin-bottom:7px; font-weight:600;">
+                                Chọn video
+                            </label>
+
+                            <select id="video-source"
+                                    style="width:100%; padding:11px; border:1px solid #d1d5db; border-radius:8px;"
+                                    {% if not available_videos %}disabled{% endif %}>
+
+                                {% if available_videos %}
+                                    {% for video in available_videos %}
+                                        <option value="{{ video }}">
+                                            {{ video }}
+                                        </option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="">Không có video</option>
+                                {% endif %}
+
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <!-- NÚT ĐIỀU KHIỂN -->
+                    <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+
+                        <button id="btn-start-monitor"
+                                type="button"
+                                onclick="startMonitoring()"
+                                style="padding:11px 22px; background:#16a34a; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;">
+                            ▶ Bắt đầu giám sát
+                        </button>
+
+                        <button id="btn-stop-monitor"
+                                type="button"
+                                onclick="stopMonitoring()"
+                                disabled
+                                style="padding:11px 22px; background:#dc2626; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; opacity:0.5;">
+                            ■ Dừng giám sát
+                        </button>
+
+                    </div>
+
+                    <!-- THÔNG BÁO -->
+                    <div id="monitor-control-message"
+                        style="margin-top:12px; font-size:13px; color:#64748b;"
+                        aria-live="polite">
+                        Sẵn sàng điều khiển giám sát.
+                    </div>
+
+                </div>
+                
+                <!-- CẢNH BÁO TRẠNG THÁI AI ENGINE -->
+                <div id="engine-alert"
+                    style="display:none; margin:15px 20px; padding:16px;
+                        border-radius:8px; border:1px solid #fecaca;
+                        background:#fef2f2; color:#991b1b;"
+                    role="alert"
+                    aria-live="assertive">
+
+                    <strong id="engine-alert-title">
+                        AI ENGINE GẶP SỰ CỐ
+                    </strong>
+
+                    <p id="engine-alert-message"
+                    style="margin-top:7px; font-size:14px;">
+                        Vui lòng kiểm tra hệ thống.
+                    </p>
+
+                </div>
+
+                <!-- MÀN HÌNH VIDEO -->
+                <div class="monitor-screen"
+                    style="position: relative; background: #111; min-height: 300px; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+
+                    <img
+                        id="live-monitor"
+                        data-stream-url="{{ url_for('video_feed') }}"
+                        alt="Video giám sát trực tiếp"
+                        style="width:100%; height:auto; display:none; object-fit:contain;"
+                        onerror="
+                            this.style.display='none';
+                            document.getElementById('monitor-error').style.display='block';
+                        "
+                    >
+
+                    <div id="monitor-error"
+                        style="display:block; color:white; text-align:center; padding:30px;">
+
+                        <div style="font-size:40px;">▣</div>
+                        <h3>Camera chưa được khởi động</h3>
+                        <p>Vui lòng chọn nguồn video và nhấn Bắt đầu giám sát.</p>
+
+                    </div>
+
+                </div>
+
+                <!-- THÔNG TIN GIÁM SÁT -->
+                <div style="padding: 18px;">
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+
+                        <strong>THÔNG TIN GIÁM SÁT</strong>
+
+                        <span id="monitor-state"
+                            class="status-badge new">
+                            Đang kiểm tra...
+                        </span>
+
+                    </div>
+
+                    <div class="stats-grid" style="margin-top:15px;">
+
+                        <div class="stat-card">
+                            <span class="stat-icon blue">◉</span>
+                            <p>Số người phát hiện</p>
+                            <h2 id="monitor-person-count">0</h2>
+                            <small>Đang được AI theo dõi</small>
+                        </div>
+
+                        <div class="stat-card">
+                            <span class="stat-icon orange">⚑</span>
+                            <p>Cảnh báo phát hiện</p>
+                            <h2 id="monitor-alert-count">0</h2>
+                            <small>Số cảnh báo trong phiên</small>
+                        </div>
+
+                        <div class="stat-card">
+                            <span class="stat-icon green">◷</span>
+                            <p>Thời gian phân tích</p>
+                            <h2 id="monitor-video-time">0s</h2>
+                            <small>Thời gian video đã xử lý</small>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- THÔNG TIN NGUỒN VIDEO -->
+                <div class="monitor-footer"
+                    style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:15px;">
+
+                    <span>NGUỒN VIDEO:
+                        <strong id="monitor-source">Chưa kết nối</strong>
+                    </span>
+
+                    <span id="monitor-updated-at" class="tag">
+                        Chưa có dữ liệu
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- BIỂU ĐỒ CẢNH BÁO -->
+        <section class="section">
+            <div class="section-heading">
+                <h3>Thống kê cảnh báo theo ngày</h3>
+                <span class="tag">7 NGÀY GẦN NHẤT</span>
+            </div>
+
+            <div class="chart-card">
+
+                <div class="chart-description">
+                    Số lượng cảnh báo được ghi nhận mỗi ngày
+                </div>
+
+                <div class="simple-chart">
+
+                    {% for item in daily_alerts %}
+                        <div class="chart-column">
+
+                            <strong class="chart-value">
+                                {{ item.total }}
+                            </strong>
+
+                            <div class="chart-bar-area">
+                                <div
+                                    class="chart-bar"
+                                    style="height: {{ item.height }}%;">
+                                </div>
+                            </div>
+
+                            <span class="chart-label">
+                                {{ item.label }}
+                            </span>
+
+                        </div>
+                    {% endfor %}
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- CẢNH BÁO GẦN ĐÂY -->
+        <section class="section" id="recent-alerts">
+
+            <div class="section-heading">
+                <h3>Cảnh báo gần đây</h3>
+                <a href="/alerts" class="view-all">
+                    Xem tất cả →
+                </a>
+            </div>
+
+            {% if recent_alerts %}
+
+                <div class="alert-list">
+
+                    {% for alert in recent_alerts %}
+
+                        
+                    <div class="alert-row">
+
+                        <!-- ẢNH MINH CHỨNG -->
+                        <div class="alert-thumbnail">
+                            {% if alert.image_path %}
+                                <img
+                                    src="{{ url_for('view_evidence',
+                                                    alert_id=alert.id,
+                                                    kind='image') }}"
+                                    alt="Ảnh minh chứng cảnh báo #{{ alert.id }}"
+                                    loading="lazy"
+                                    onclick="openImagePopup(this.src)">
+                            {% else %}
+                                <div class="no-thumbnail">
+                                    <span>▣</span>
+                                    <small>Chưa có ảnh</small>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- THÔNG TIN CẢNH BÁO -->
+                        <div class="alert-info">
+
+                            <strong>
+                                Cảnh báo #{{ alert.id }}
+                                – {{ alert.alert_type }}
+                            </strong>
+
+                            <p>
+                                Video: {{ alert.video_name or "Không rõ" }}
+                            </p>
+
+                            <small>
+                                Thời điểm:
+                                {{ "%.2f"|format(alert.video_time or 0) }} giây
+                                | Ghi nhận: {{ alert.created_at }}
+                            </small>
+
+                            <div class="alert-meta">
+
+                                {% if alert.status == "DA_XAC_MINH" %}
+                                    <span class="status-badge verified">
+                                        Đã xác minh
+                                    </span>
+
+                                {% elif alert.status == "DANG_KIEM_TRA" %}
+                                    <span class="status-badge processing">
+                                        Đang kiểm tra
+                                    </span>
+
+                                {% else %}
+                                    <span class="status-badge new">
+                                        Mới
+                                    </span>
+                                {% endif %}
+
+                                <a href="{{ url_for('alert_detail',
+                                                    alert_id=alert.id) }}"
+                                class="detail-link">
+                                    Xem chi tiết →
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-state">
+                    <div class="empty-icon">✓</div>
+                    <strong>Chưa có dữ liệu cảnh báo</strong>
+                    <p>Cảnh báo từ AI Engine sẽ xuất hiện tại đây.</p>
+                </div>
+
+            {% endif %}
+
+        </section>
+
+        <footer>
+            SCHOOL SAFETY AI · Hệ thống hỗ trợ giám sát an toàn học đường
+        </footer>
+
+    </main>
+
+    <!-- POPUP XEM ẢNH -->
+    <div id="imagePopup"
+        class="image-popup"
+        onclick="closeImagePopup()">
+
+        <span class="image-popup-close">&times;</span>
+
+        <img id="popupImage" src="" alt="Ảnh minh chứng phóng to">
+
+    </div>
+
+    <script>
+    function openImagePopup(src) {
+        const popup = document.getElementById("imagePopup");
+        const image = document.getElementById("popupImage");
+
+        image.src = src;
+        popup.style.display = "flex";
+    }
+
+    function closeImagePopup() {
+        document.getElementById("imagePopup").style.display = "none";
+        document.getElementById("popupImage").src = "";
+    }
+
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+            closeImagePopup();
+        }
+    });
+
+        // ========================================
+    // CẬP NHẬT TRẠNG THÁI AI ENGINE
+    // ========================================
+
+    
+// ========================================
+// ĐIỀU KHIỂN NGUỒN GIÁM SÁT
+// ========================================
+
+let commandPending = null;
+let pendingTimer = null;
+
+let statusPollTimer = null;
+
+// Bắt đầu kiểm tra trạng thái định kỳ
+function startStatusPolling() {
+    if (statusPollTimer !== null) return;
+
+    statusPollTimer = setInterval(() => {
+        updateMonitorStatus();
+    }, 2000);
+}
+
+// Dừng kiểm tra trạng thái định kỳ
+function stopStatusPolling() {
+    if (statusPollTimer !== null) {
+        clearInterval(statusPollTimer);
+        statusPollTimer = null;
+    }
+}
+
+function changeSourceType() {
+    const sourceType = document.getElementById("source-type").value;
+
+    document.getElementById("camera-selection").style.display =
+        sourceType === "camera" ? "block" : "none";
+
+    document.getElementById("rtsp-selection").style.display =
+        sourceType === "rtsp" ? "block" : "none";
+
+    document.getElementById("video-selection").style.display =
+        sourceType === "video" ? "block" : "none";
+}
+
+async function loadCameras() {
+    const cameraSelect = document.getElementById("camera-source");
+    const rtspSelect = document.getElementById("rtsp-source");
+
+    try {
+        const response = await fetch("/api/cameras");
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error("Không thể tải danh sách camera!");
+        }
+
+        // Xóa danh sách cũ
+        cameraSelect.innerHTML = "";
+        rtspSelect.innerHTML = "";
+
+        // Chỉ lấy các nguồn đang được bật
+        const cameras = data.cameras.filter(camera =>
+            camera.source_type === "camera" &&
+            Number(camera.is_enabled) === 1
+        );
+
+        const rtspCameras = data.cameras.filter(camera =>
+            camera.source_type === "rtsp" &&
+            Number(camera.is_enabled) === 1
+        );
+
+        // Tải camera nội bộ
+        if (cameras.length === 0) {
+            cameraSelect.add(new Option(
+                "Chưa có camera khả dụng", ""
+            ));
+        } else {
+            cameras.forEach(camera => {
+                const option = new Option(
+                    `${camera.name} - ${camera.location || "Chưa có vị trí"}`,
+                    camera.source
+                );
+
+                cameraSelect.appendChild(option);
+            });
+        }
+
+        // Tải camera RTSP
+        if (rtspCameras.length === 0) {
+            rtspSelect.add(new Option(
+                "Chưa có camera RTSP khả dụng", ""
+            ));
+        } else {
+            rtspCameras.forEach(camera => {
+                const option = new Option(
+                    `${camera.name} - ${camera.location || "Chưa có vị trí"}`,
+                    camera.source
+                );
+
+                rtspSelect.appendChild(option);
+            });
+        }
+
+    } catch (error) {
+        console.error("Lỗi tải danh sách camera:", error);
+
+        cameraSelect.innerHTML = "";
+        rtspSelect.innerHTML = "";
+
+        cameraSelect.add(new Option(
+            "Lỗi tải danh sách camera", ""
+        ));
+
+        rtspSelect.add(new Option(
+            "Lỗi tải danh sách camera RTSP", ""
+        ));
+    }
+}
+
+// Cập nhật trạng thái các nút điều khiển
+
+function updateControlButtons(
+    state,
+    engineRunning = true,
+    recoveryFailed = false
+) {
+    const startButton = document.getElementById("btn-start-monitor");
+    const stopButton = document.getElementById("btn-stop-monitor");
+
+    const isRunning = state === "RUNNING" || state === "STARTING";
+    const isPending = commandPending !== null;
+
+    // Khong cho dieu khien khi AI Engine dang loi
+    // hoac dang cho khoi phuc
+    const engineUnavailable =
+        !engineRunning || recoveryFailed ||
+        state === "ERROR" || state === "RECOVERING";
+
+    startButton.disabled =
+        isRunning || isPending || engineUnavailable;
+
+    stopButton.disabled =
+        !isRunning || isPending || engineUnavailable;
+
+    startButton.style.opacity =
+        startButton.disabled ? "0.5" : "1";
+
+    stopButton.style.opacity =
+        stopButton.disabled ? "0.5" : "1";
+
+    startButton.style.cursor =
+        startButton.disabled ? "not-allowed" : "pointer";
+
+    stopButton.style.cursor =
+        stopButton.disabled ? "not-allowed" : "pointer";
+
+    document.getElementById("source-type").disabled =
+        isRunning || isPending || engineUnavailable;
+
+    document.getElementById("camera-source").disabled =
+        isRunning || isPending || engineUnavailable;
+
+    document.getElementById("rtsp-source").disabled =
+        isRunning || isPending || engineUnavailable;
+
+    document.getElementById("video-source").disabled =
+        isRunning || isPending || engineUnavailable;
+}
+
+
+
+// Hiển thị thông báo
+function showControlMessage(message, success = true) {
+    const element = document.getElementById(
+        "monitor-control-message"
+    );
+
+    element.textContent = message;
+    element.style.color = success ? "#16a34a" : "#dc2626";
+}
+
+
+// Gửi lệnh bắt đầu giám sát
+async function startMonitoring() {
+
+    if (commandPending) return;
+
+    const sourceType = document.getElementById(
+        "source-type"
+    ).value;
+
+    let source;
+
+    // Lấy nguồn theo loại đã chọn
+    if (sourceType === "camera") {
+
+        source = document.getElementById(
+            "camera-source"
+        ).value;
+
+        if (source === "") {
+            showControlMessage(
+                "Vui lòng chọn camera nội bộ trước khi bắt đầu.",
+                false
+            );
+            return;
+        }
+
+    } else if (sourceType === "rtsp") {
+
+        source = document.getElementById(
+            "rtsp-source"
+        ).value;
+
+        if (!source) {
+            showControlMessage(
+                "Vui lòng chọn camera RTSP trước khi bắt đầu.",
+                false
+            );
+            return;
+        }
+
+    } else if (sourceType === "video") {
+
+        source = document.getElementById(
+            "video-source"
+        ).value;
+
+        if (!source) {
+            showControlMessage(
+                "Vui lòng chọn video trước khi bắt đầu.",
+                false
+            );
+            return;
+        }
+    }
+
+    commandPending = "START";
+    updateControlButtons("STARTING");
+
+    showControlMessage("Đang gửi lệnh bắt đầu giám sát...");
+
+    try {
+
+        const response = await fetch("/api/monitor/start", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector(
+                    'meta[name="csrf-token"]'
+                ).content
+            },
+            body: JSON.stringify({
+                source_type: sourceType,
+                source: source
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message || "Không thể bắt đầu giám sát."
+            );
+        }
+
+        showControlMessage(
+            "Đã gửi lệnh thành công. Đang chờ AI Engine khởi động..."
+        );
+
+        pendingTimer = setTimeout(() => {
+            if (commandPending === "START") {
+                commandPending = null;
+
+                showControlMessage(
+                    "Chưa nhận được trạng thái khởi động từ AI Engine. Vui lòng kiểm tra hệ thống.",
+                    false
+                );
+
+                updateMonitorStatus();
+            }
+        }, 10000);
+
+        updateMonitorStatus();
+
+    } catch (error) {
+
+        commandPending = null;
+
+        showControlMessage(error.message, false);
+        updateMonitorStatus();
+    }
+}
+
+// Gửi lệnh dừng giám sát
+async function stopMonitoring() {
+
+    if (commandPending) return;
+
+    commandPending = "STOP";
+    updateControlButtons("STARTING");
+
+    showControlMessage("Đang gửi lệnh dừng giám sát...");
+
+    try {
+
+        const response = await fetch("/api/monitor/stop", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector(
+                    'meta[name="csrf-token"]'
+                ).content
+            },
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message || "Không thể dừng giám sát."
+            );
+        }
+
+        showControlMessage(
+            "Đã gửi lệnh dừng. Đang chờ AI Engine hoàn tất..."
+        );
+
+        pendingTimer = setTimeout(() => {
+            if (commandPending === "STOP") {
+                commandPending = null;
+                showControlMessage(
+                    "Chưa nhận được trạng thái dừng từ AI Engine. Vui lòng kiểm tra hệ thống.",
+                    false
+                );
+                updateMonitorStatus();
+            }
+        }, 10000);
+
+        updateMonitorStatus();
+
+    } catch (error) {
+
+        commandPending = null;
+
+        showControlMessage(error.message, false);
+        updateMonitorStatus();
+    }
+}
+
+
+// ========================================
+// CẬP NHẬT TRẠNG THÁI AI ENGINE
+// ========================================
+
+async function updateMonitorStatus() {
+
+    const badge = document.getElementById("monitor-status-badge");
+    const stateElement = document.getElementById("monitor-state");
+
+    try {
+
+        const response = await fetch(
+            "/api/monitor-status?t=" + Date.now(),
+            { cache: "no-store" }
+        );
+
+        if (!response.ok) {
+            throw new Error("Không thể kết nối API");
+        }
+
+        const data = await response.json();
+
+        // Điều khiển luồng video theo trạng thái AI
+        updateVideoStream(data.state);
+        
+        // ========================================
+        // HIEN THI CANH BAO AI ENGINE
+        // ========================================
+
+        const engineAlert = document.getElementById("engine-alert");
+        const engineAlertTitle = document.getElementById("engine-alert-title");
+        const engineAlertMessage = document.getElementById("engine-alert-message");
+
+        if (data.state === "ERROR") {
+
+            engineAlert.style.display = "block";
+
+            engineAlert.style.background = "#fef2f2";
+            engineAlert.style.borderColor = "#fecaca";
+            engineAlert.style.color = "#991b1b";
+
+            engineAlertTitle.textContent =
+                "AI ENGINE KHÔNG THỂ PHỤC HỒI";
+
+            engineAlertMessage.textContent =
+                data.error || "AI Engine đã hết số lần tự phục hồi.";
+
+        } else if (data.state === "RECOVERING") {
+
+            engineAlert.style.display = "block";
+
+            engineAlert.style.background = "#fffbeb";
+            engineAlert.style.borderColor = "#fde68a";
+            engineAlert.style.color = "#92400e";
+
+            engineAlertTitle.textContent =
+                "AI ENGINE ĐANG ĐƯỢC KHÔI PHỤC";
+
+            engineAlertMessage.textContent =
+                data.error || "Hệ thống đang thử khởi động lại AI Engine.";
+
+        } else {
+
+            engineAlert.style.display = "none";
+        }
+
+
+        // Cập nhật số liệu
+        document.getElementById("monitor-person-count").textContent =
+            data.person_count ?? 0;
+
+        document.getElementById("monitor-alert-count").textContent =
+            data.alert_count ?? 0;
+
+        document.getElementById("monitor-video-time").textContent =
+            (data.video_time ?? 0).toFixed(1) + "s";
+
+        // Cập nhật nguồn video
+        document.getElementById("monitor-source").textContent =
+            data.source || "Chưa kết nối";
+
+        // Cập nhật thời gian
+        document.getElementById("monitor-updated-at").textContent =
+            data.updated_at || "Chưa có dữ liệu";
+
+        // Xác định trạng thái
+        if (data.state === "RUNNING") {
+
+            badge.textContent = "AI ĐANG HOẠT ĐỘNG";
+            badge.style.color = "#16a34a";
+
+            stateElement.textContent = "Đang giám sát";
+            stateElement.className = "status-badge verified";
+
+        } else if (data.state === "STOPPED") {
+
+            badge.textContent = "AI ĐÃ DỪNG";
+            badge.style.color = "#dc2626";
+
+            stateElement.textContent = "Đã dừng";
+            stateElement.className = "status-badge new";
+
+        } else if (data.state === "STARTING") {
+
+            badge.textContent = "AI ĐANG KHỞI ĐỘNG";
+            badge.style.color = "#d97706";
+
+            stateElement.textContent = "Đang khởi động";
+            stateElement.className = "status-badge processing";
+        
+        } else if (data.state === "RECOVERING") {
+
+            badge.textContent = "AI ĐANG KHÔI PHỤC";
+            badge.style.color = "#d97706";
+
+            stateElement.textContent = "Đang khôi phục";
+            stateElement.className = "status-badge processing";
+
+        } else if (data.state === "ERROR") {
+
+            badge.textContent = "AI GẶP LỖI";
+            badge.style.color = "#dc2626";
+
+            stateElement.textContent = "Có lỗi xảy ra";
+            stateElement.className = "status-badge new";
+
+        } else {
+
+            badge.textContent = "TRẠNG THÁI KHÔNG XÁC ĐỊNH";
+
+            stateElement.textContent = data.state || "Không xác định";
+            stateElement.className = "status-badge new";
+        }
+
+        // Xác nhận lệnh đã được AI Engine thực hiện
+        if (
+            commandPending === "START" &&
+            data.state === "RUNNING"
+        ) {
+            commandPending = null;
+            clearTimeout(pendingTimer);
+
+            showControlMessage(
+                "AI Engine đã bắt đầu giám sát thành công."
+            );
+        }
+
+        if (
+            commandPending === "STOP" &&
+            data.state === "STOPPED"
+        ) {
+            commandPending = null;
+            clearTimeout(pendingTimer);
+
+            showControlMessage(
+                "AI Engine đã dừng giám sát."
+            );
+        }
+
+        updateControlButtons(
+            data.state,
+            data.engine_running,
+            data.engine_recovery_failed
+        );
+        // Điều khiển polling sau khi đã xử lý trạng thái và commandPending
+        if (
+            ["RUNNING", "STARTING", "RECOVERING"].includes(data.state) ||
+            commandPending !== null
+        ) {
+            startStatusPolling();
+        } else {
+            stopStatusPolling();
+        }
+
+    } catch (error) {
+
+        badge.textContent = "MẤT KẾT NỐI AI";
+        badge.style.color = "#dc2626";
+
+        stateElement.textContent = "Không kết nối được";
+        stateElement.className = "status-badge new";
+
+        console.error("Lỗi cập nhật trạng thái AI:", error);
+    }
+}
+
+
+function updateVideoStream(state) {
+
+    const img = document.getElementById("live-monitor");
+    const error = document.getElementById("monitor-error");
+
+    if (state === "RUNNING") {
+
+        if (!img.getAttribute("src")) {
+            img.src = img.dataset.streamUrl;
+        }
+
+        img.style.display = "block";
+        error.style.display = "none";
+
+    } else if (state === "STOPPED") {
+
+        // Đóng luồng video
+        img.removeAttribute("src");
+        img.style.display = "none";
+
+        error.style.display = "block";
+        error.querySelector("h3").textContent =
+            "Camera chưa được khởi động";
+
+        error.querySelector("p").textContent =
+            "Vui lòng chọn nguồn video và nhấn Bắt đầu giám sát.";
+    }
+}
+
+        // ========================================
+        // KHỞI TẠO DASHBOARD
+        // ========================================
+
+        changeSourceType();
+        loadCameras();
+
+        // Chỉ kiểm tra trạng thái một lần khi mở Dashboard
+        updateMonitorStatus();
+
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,423 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết cảnh báo #{{ alert.id }} - SCHOOL SAFETY AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- THANH DIEU HUONG -->
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-icon">S</div>
+            <div>
+                <h2>SCHOOL SAFETY</h2>
+                <span>AI MONITORING SYSTEM</span>
+            </div>
+        </div>
+
+        <div class="menu-title">MENU CHÍNH</div>
+
+        <a href="/" class="menu-item">
+            ▦ &nbsp; Tổng quan
+        </a>
+
+        <a href="/#monitoring" class="menu-item">
+            ◉ &nbsp; Giám sát
+        </a>
+
+        <a href="/alerts" class="menu-item active">
+            ⚑ &nbsp; Cảnh báo
+        </a>
+
+        <!-- <a href="/alerts" class="menu-item">
+            ▣ &nbsp; Video minh chứng
+        </a> -->
+
+        <a href="/cameras" class="menu-item">
+            📷 &nbsp; Quản lý camera
+        </a>
+
+        <div class="sidebar-bottom">
+            <div class="system-status">
+                <span class="status-dot"></span>
+                Hệ thống sẵn sàng
+            </div>
+            <small>Phiên bản thử nghiệm 1.0</small>
+        </div>
+
+    </aside>
+
+    <!-- NOI DUNG CHINH -->
+    <main class="main-content">
+
+        <header class="topbar">
+
+            <div>
+                <h1>Chi tiết cảnh báo #{{ alert.id }}</h1>
+                <p>Thông tin sự kiện và minh chứng từ AI Engine</p>
+            </div>
+
+            <div class="user-info">
+                <div class="user-account">
+                    <div class="avatar">GT</div>
+                    <span>
+                        Xin chào, {{ session["user"]["full_name"] or session["user"]["username"] }}
+                    </span>
+
+                    <form method="POST" action="{{ url_for('logout') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="logout-btn">
+                            Đăng xuất
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </header>
+
+        <!-- DIEU HUONG -->
+        <div class="detail-navigation">
+
+            <a href="{{ url_for('alerts_page') }}" class="back-link">
+                ← Quay lại danh sách cảnh báo
+            </a>
+
+            <span class="detail-code">
+                MÃ CẢNH BÁO: #{{ alert.id }}
+            </span>
+
+        </div>
+
+        <!-- TONG QUAN CANH BAO -->
+        <section class="section">
+
+            <div class="detail-title-row">
+
+                <div>
+                    <h3>Thông tin sự kiện</h3>
+                    <p class="section-description">
+                        Thông tin được ghi nhận tại thời điểm AI phát hiện tình huống.
+                    </p>
+                </div>
+
+                <div>
+                    {% if alert.status == "DA_XAC_MINH" %}
+                        <span class="status-badge status-done">
+                            Đã xác minh
+                        </span>
+                    {% elif alert.status == "DANG_KIEM_TRA" %}
+                        <span class="status-badge status-checking">
+                            Đang kiểm tra
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-new">
+                            Mới
+                        </span>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <div class="detail-info-grid">
+
+                <div class="detail-info-card">
+                    <span>Loại cảnh báo</span>
+                    <strong>{{ alert.alert_type or "Không rõ" }}</strong>
+                </div>
+
+                <div class="detail-info-card">
+                    <span>Video nguồn</span>
+                    <strong>{{ alert.video_name or "Không rõ" }}</strong>
+                </div>
+
+                <div class="detail-info-card">
+                    <span>Thời điểm video</span>
+                    <strong>
+                        {{ "%.2f"|format(alert.video_time or 0) }} giây
+                    </strong>
+                </div>
+
+                <div class="detail-info-card">
+                    <span>Người liên quan</span>
+                    <strong>
+                        ID {{ alert.person_id_1 }}
+                        – ID {{ alert.person_id_2 }}
+                    </strong>
+                </div>
+
+                <div class="detail-info-card">
+                    <span>Thời gian ghi nhận</span>
+                    <strong>{{ alert.created_at }}</strong>
+                </div>
+
+                <div class="detail-info-card">
+                    <span>Mã cảnh báo</span>
+                    <strong>#{{ alert.id }}</strong>
+                </div>
+
+            </div>
+
+            <div class="reason-box">
+                <strong>Lý do AI đưa ra cảnh báo</strong>
+                <p>{{ alert.reason or "Không có thông tin" }}</p>
+                <small>
+                    Cảnh báo của AI chỉ là dấu hiệu cần được kiểm tra,
+                    không phải kết luận về hành vi của học sinh.
+                </small>
+            </div>
+
+        </section>
+
+        <!-- QUAN LY XU LY -->
+        <section class="section">
+
+            <div class="detail-section-heading">
+                <div>
+                    <h3>Quản lý xử lý cảnh báo</h3>
+                    <p class="section-description">
+                        Cập nhật kết quả kiểm tra và thông tin người phụ trách.
+                    </p>
+                </div>
+            </div>
+
+            <div class="management-card">
+
+                <form
+                    action="{{ url_for('update_alert',
+                                      alert_id=alert.id) }}"
+                    method="POST"
+                >
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label for="status">
+                                Trạng thái xử lý
+                            </label>
+
+                            <select name="status" id="status" required>
+
+                                <option value="MOI"
+                                    {% if alert.status == "MOI" or not alert.status %}selected{% endif %}>
+                                    Mới
+                                </option>
+
+                                <option value="DANG_KIEM_TRA"
+                                    {% if alert.status == "DANG_KIEM_TRA" %}selected{% endif %}>
+                                    Đang kiểm tra
+                                </option>
+
+                                <option value="DA_XAC_MINH"
+                                    {% if alert.status == "DA_XAC_MINH" %}selected{% endif %}>
+                                    Đã xác minh
+                                </option>
+
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="handled_by">
+                                Người phụ trách
+                            </label>
+
+                            <input
+                                type="text"
+                                id="handled_by"
+                                name="handled_by"
+                                value="{{ alert.handled_by or '' }}"
+                                placeholder="Nhập tên người phụ trách"
+                            >
+                        </div>
+
+                    </div>
+
+                    <div class="form-group">
+                        <label for="handler_note">
+                            Ghi chú kết quả kiểm tra
+                        </label>
+
+                        <textarea
+                            id="handler_note"
+                            name="handler_note"
+                            rows="5"
+                            placeholder="Nhập nội dung xác minh, kết quả kiểm tra hoặc hướng xử lý..."
+                        >{{ alert.handler_note or '' }}</textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">
+                            ✓ Cập nhật xử lý
+                        </button>
+                    </div>
+
+                </form>
+
+                {% if alert.handled_at or alert.handled_by or alert.handler_note %}
+
+                    <div class="processing-history">
+
+                        <h4>Thông tin xử lý gần nhất</h4>
+
+                        {% if alert.handled_by %}
+                            <p>
+                                <strong>Người phụ trách:</strong>
+                                {{ alert.handled_by }}
+                            </p>
+                        {% endif %}
+
+                        {% if alert.handled_at %}
+                            <p>
+                                <strong>Thời gian cập nhật:</strong>
+                                {{ alert.handled_at }}
+                            </p>
+                        {% endif %}
+
+                        {% if alert.handler_note %}
+                            <p>
+                                <strong>Ghi chú:</strong>
+                                {{ alert.handler_note }}
+                            </p>
+                        {% endif %}
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </section>
+
+        <!-- ANH MINH CHUNG -->
+        <section class="section">
+
+            <div class="detail-section-heading">
+                <div>
+                    <h3>Ảnh minh chứng</h3>
+                    <p class="section-description">
+                        Hình ảnh được lưu tại thời điểm ghi nhận cảnh báo.
+                    </p>
+                </div>
+            </div>
+
+            {% if alert.image_path %}
+
+                <div class="evidence-card">
+
+                <div class="evidence-image">
+                    {% if alert.image_path %}
+                        <img
+                            src="{{ url_for('view_evidence', alert_id=alert.id, kind='image') }}"
+                            alt="Ảnh minh chứng"
+                            class="evidence-preview"
+                            onclick="openImagePopup(this.src)"
+                        >
+                    {% else %}
+                        <p>Chưa có ảnh minh chứng.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Popup xem ảnh -->
+                <div id="imagePopup" class="image-popup" onclick="closeImagePopup()">
+                    <span class="image-popup-close">&times;</span>
+                    <img id="popupImage" src="" alt="Ảnh phóng to">
+                </div>
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-state">
+                    <div class="empty-icon">▣</div>
+                    <strong>Chưa có ảnh minh chứng</strong>
+                    <p>Không tìm thấy ảnh được lưu cho cảnh báo này.</p>
+                </div>
+
+            {% endif %}
+
+        </section>
+
+        <!-- VIDEO MINH CHUNG -->
+        <section class="section">
+
+            <div class="detail-section-heading">
+                <div>
+                    <h3>Video minh chứng</h3>
+                    <p class="section-description">
+                        Video ghi lại diễn biến xung quanh thời điểm phát hiện.
+                    </p>
+                </div>
+            </div>
+
+            {% if alert.clip_path %}
+
+                <div class="evidence-card">
+
+                    <video
+                        class="evidence-video"
+                        controls
+                        preload="metadata"
+                    >
+                        <source
+                            src="{{ url_for('view_evidence',
+                                            alert_id=alert.id,
+                                            kind='video') }}"
+                            type="video/mp4"
+                        >
+                        Trình duyệt không hỗ trợ phát video.
+                    </video>
+
+                    <div class="evidence-caption">
+                        <span>Video minh chứng cảnh báo #{{ alert.id }}</span>
+                        <span>Định dạng MP4</span>
+                    </div>
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-state">
+                    <div class="empty-icon">▶</div>
+                    <strong>Chưa có video minh chứng</strong>
+                    <p>Không tìm thấy video được lưu cho cảnh báo này.</p>
+                </div>
+
+            {% endif %}
+
+        </section>
+
+        <footer>
+            SCHOOL SAFETY AI · Hệ thống hỗ trợ giám sát an toàn học đường
+        </footer>
+
+    </main>
+
+    <script>
+    function openImagePopup(src) {
+        const popup = document.getElementById("imagePopup");
+        const image = document.getElementById("popupImage");
+
+        image.src = src;
+        popup.style.display = "flex";
+    }
+
+    function closeImagePopup() {
+        document.getElementById("imagePopup").style.display = "none";
+    }
+
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+            closeImagePopup();
+        }
+    });
+    </script>
+
+</body>
+</html>

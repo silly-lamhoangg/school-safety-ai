@@ -1,0 +1,187 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - SCHOOL SAFETY AI</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background:
+                radial-gradient(circle at top right, #164e78, transparent 40%),
+                linear-gradient(135deg, #071426, #0c2340 60%, #102f50);
+            color: #eaf4ff;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 38px;
+            background: rgba(13, 35, 60, 0.94);
+            border: 1px solid rgba(100, 190, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        .logo {
+            width: 66px;
+            height: 66px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #0788d1, #13c5d9);
+            font-size: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 23px;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            margin-top: 9px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #9db7d1;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 19px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #c9def2;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #31516e;
+            border-radius: 10px;
+            outline: none;
+            background: #102b47;
+            color: white;
+            font-size: 15px;
+        }
+
+        input:focus {
+            border-color: #13b9e5;
+            box-shadow: 0 0 0 3px rgba(19, 185, 229, 0.12);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 8px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #0788d1, #11b9d5);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+        }
+
+        .error {
+            margin-bottom: 18px;
+            padding: 11px;
+            border: 1px solid rgba(255, 90, 90, 0.35);
+            border-radius: 8px;
+            background: rgba(255, 70, 70, 0.1);
+            color: #ffaaaa;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .footer {
+            margin-top: 28px;
+            text-align: center;
+            color: #7895b1;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-card">
+
+        <div class="logo">🛡️</div>
+
+        <h1>SCHOOL SAFETY AI</h1>
+
+        <p class="subtitle">
+            Hệ thống giám sát và cảnh báo an toàn trường học
+        </p>
+
+        {% if error %}
+            <div class="error">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="username">Tên đăng nhập</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Nhập tên đăng nhập"
+                    autocomplete="username"
+                    required
+                    autofocus
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Nhập mật khẩu"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <button type="submit">
+                ĐĂNG NHẬP HỆ THỐNG
+            </button>
+
+        </form>
+
+        <div class="footer">
+            SCHOOL SAFETY AI · HỆ THỐNG DÀNH CHO GIÁM THỊ
+        </div>
+
+    </div>
+
+</body>
+</html>

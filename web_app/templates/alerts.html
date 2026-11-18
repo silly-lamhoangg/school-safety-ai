@@ -1,0 +1,294 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý cảnh báo - SCHOOL SAFETY AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">S</div>
+            <div>
+                <h2>SCHOOL SAFETY</h2>
+                <span>AI MONITORING SYSTEM</span>
+            </div>
+        </div>
+
+        <div class="menu-title">MENU CHÍNH</div>
+
+        <a href="/" class="menu-item">▦ &nbsp; Tổng quan</a>
+        <a href="/#monitoring" class="menu-item">◉ &nbsp; Giám sát</a>
+        <a href="/alerts" class="menu-item active">⚑ &nbsp; Cảnh báo</a>
+        <!-- <a href="/alerts" class="menu-item">▣ &nbsp; Video minh chứng</a> -->
+        <a href="/cameras" class="menu-item">📷 &nbsp; Quản lý camera</a>
+        <div class="sidebar-bottom">
+            <div class="system-status">
+                <span class="status-dot"></span>
+                Hệ thống sẵn sàng
+            </div>
+            <small>Phiên bản thử nghiệm 1.0</small>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <h1>Quản lý cảnh báo</h1>
+                <p>Tiếp nhận, tìm kiếm và theo dõi các cảnh báo từ AI Engine</p>
+            </div>
+
+            <div class="user-info">
+                <div class="user-account">
+                    <div class="avatar">GT</div>
+                    <span>
+                        Xin chào, {{ session["user"]["full_name"] or session["user"]["username"] }}
+                    </span>
+
+                    <form method="POST" action="{{ url_for('logout') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="logout-btn">
+                            Đăng xuất
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+        <section class="section">
+
+            <div class="section-heading">
+                <div>
+                    <h3>Danh sách cảnh báo</h3>
+                    <p class="result-count">
+                        Tìm thấy <strong>{{ total_alerts }}</strong> cảnh báo
+                    </p>
+                </div>
+            </div>
+
+            <!-- BỘ LỌC VÀ TÌM KIẾM -->
+            <div class="alert-filter-panel">
+
+                <form action="{{ url_for('alerts_page') }}"
+                      method="GET"
+                      class="alert-filter-form">
+
+                    <div class="filter-field search-field">
+                        <label for="q">Tìm kiếm</label>
+                        <input
+                            type="text"
+                            id="q"
+                            name="q"
+                            value="{{ search_query }}"
+                            placeholder="Mã cảnh báo, video, lý do..."
+                        >
+                    </div>
+
+                    <div class="filter-field">
+                        <label for="status">Trạng thái</label>
+                        <select name="status" id="status">
+                            <option value="ALL"
+                                {% if selected_status == "ALL" %}selected{% endif %}>
+                                Tất cả trạng thái
+                            </option>
+
+                            <option value="MOI"
+                                {% if selected_status == "MOI" %}selected{% endif %}>
+                                Mới
+                            </option>
+
+                            <option value="DANG_KIEM_TRA"
+                                {% if selected_status == "DANG_KIEM_TRA" %}selected{% endif %}>
+                                Đang kiểm tra
+                            </option>
+
+                            <option value="DA_XAC_MINH"
+                                {% if selected_status == "DA_XAC_MINH" %}selected{% endif %}>
+                                Đã xác minh
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="filter-field">
+                        <label for="alert_type">Loại cảnh báo</label>
+                        <select name="alert_type" id="alert_type">
+                            <option value="ALL"
+                                {% if selected_type == "ALL" %}selected{% endif %}>
+                                Tất cả loại
+                            </option>
+
+                            {% for item in alert_types %}
+                                <option value="{{ item }}"
+                                    {% if selected_type == item %}selected{% endif %}>
+                                    {{ item }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <input type="hidden" name="page" value="1">
+
+                    <div class="filter-actions">
+                        <button type="submit" class="btn-primary">
+                            🔍 Tìm kiếm
+                        </button>
+
+                        <a href="{{ url_for('alerts_page') }}"
+                           class="btn-reset">
+                            Đặt lại
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <!-- BẢNG CẢNH BÁO -->
+            <div class="table-wrapper">
+
+                <table class="alert-table">
+
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Thời gian video</th>
+                            <th>Video nguồn</th>
+                            <th>Người liên quan</th>
+                            <th>Loại cảnh báo</th>
+                            <th>Lý do</th>
+                            <th>Minh chứng</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for alert in alerts %}
+                        <tr>
+
+                            <td><strong>#{{ alert.id }}</strong></td>
+
+                            <td>
+                                {{ "%.2f"|format(alert.video_time or 0) }} giây
+                            </td>
+
+                            <td class="video-name">
+                                {{ alert.video_name or "Không rõ" }}
+                            </td>
+
+                            <td>
+                                ID {{ alert.person_id_1 }}
+                                – ID {{ alert.person_id_2 }}
+                            </td>
+
+                            <td>
+                                <span class="alert-badge">
+                                    {{ alert.alert_type or "Không rõ" }}
+                                </span>
+                            </td>
+
+                            <td class="reason-cell">
+                                {{ alert.reason or "Không có thông tin" }}
+                            </td>
+
+                            <td>
+                                <a href="{{ url_for('alert_detail', alert_id=alert.id) }}"
+                                   class="detail-link">
+                                    Xem chi tiết →
+                                </a>
+                            </td>
+
+                            <td>
+                                {% if alert.status == "MOI" or not alert.status %}
+                                    <span class="status-badge status-new">
+                                        Mới
+                                    </span>
+
+                                {% elif alert.status == "DANG_KIEM_TRA" %}
+                                    <span class="status-badge status-checking">
+                                        Đang kiểm tra
+                                    </span>
+
+                                {% elif alert.status == "DA_XAC_MINH" %}
+                                    <span class="status-badge status-done">
+                                        Đã xác minh
+                                    </span>
+
+                                {% else %}
+                                    <span class="status-badge">
+                                        Chưa xác định
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                        </tr>
+
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="no-data">
+                                <div class="empty-state">
+                                    <div class="empty-icon">✓</div>
+                                    <strong>Không tìm thấy cảnh báo phù hợp</strong>
+                                    <p>Hãy thử thay đổi từ khóa hoặc điều kiện lọc.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <!-- PHÂN TRANG -->
+            {% if total_pages > 1 %}
+            <div class="pagination">
+
+                {% if page > 1 %}
+                    <a href="{{ url_for('alerts_page',
+                        page=page-1,
+                        status=selected_status,
+                        alert_type=selected_type,
+                        q=search_query) }}">
+                        ← Trước
+                    </a>
+                {% else %}
+                    <span class="pagination-disabled">← Trước</span>
+                {% endif %}
+
+                <span class="page-info">
+                    Trang {{ page }} / {{ total_pages }}
+                </span>
+
+                {% if page < total_pages %}
+                    <a href="{{ url_for('alerts_page',
+                        page=page+1,
+                        status=selected_status,
+                        alert_type=selected_type,
+                        q=search_query) }}">
+                        Sau →
+                    </a>
+                {% else %}
+                    <span class="pagination-disabled">Sau →</span>
+                {% endif %}
+
+            </div>
+            {% endif %}
+
+        </section>
+
+        <footer>
+            SCHOOL SAFETY AI · Hệ thống hỗ trợ giám sát an toàn học đường
+        </footer>
+
+    </main>
+
+</body>
+</html>

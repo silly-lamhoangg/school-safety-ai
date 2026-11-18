@@ -1,0 +1,798 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Quản lý camera - SCHOOL SAFETY AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        .camera-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .btn-add-camera {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 11px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-add-camera:hover {
+            background: #1d4ed8;
+        }
+
+        .camera-form {
+            display: none;
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .camera-form.show {
+            display: block;
+        }
+
+        .camera-form h3 {
+            margin-top: 0;
+            margin-bottom: 18px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 11px;
+            border: 1px solid #d1d5db;
+            border-radius: 7px;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-save,
+        .btn-cancel {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-save {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .form-message {
+            margin-top: 14px;
+            font-size: 14px;
+        }
+
+        .form-message.error {
+            color: #dc2626;
+        }
+
+        .form-message.success {
+            color: #16a34a;
+        }
+
+        @media (max-width: 700px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">S</div>
+            <div>
+                <h2>SCHOOL SAFETY</h2>
+                <span>AI MONITORING SYSTEM</span>
+            </div>
+        </div>
+
+        <div class="menu-title">MENU CHÍNH</div>
+
+        <a href="/" class="menu-item">▦ &nbsp; Tổng quan</a>
+        <a href="/#monitoring" class="menu-item">◉ &nbsp; Giám sát</a>
+        <a href="/alerts" class="menu-item">⚑ &nbsp; Cảnh báo</a>
+        <!-- <a href="/alerts" class="menu-item">▣ &nbsp; Video minh chứng</a> -->
+        <a href="/cameras" class="menu-item active">📷 &nbsp; Quản lý camera</a>
+
+        <div class="sidebar-bottom">
+            <div class="system-status">
+                <span class="status-dot"></span>
+                Hệ thống sẵn sàng
+            </div>
+            <small>Phiên bản thử nghiệm 1.0</small>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <h1>Quản lý camera</h1>
+                <p>Quản lý các nguồn camera kết nối với hệ thống AI</p>
+            </div>
+
+            <div class="user-info">
+                <div class="user-account">
+                    <div class="avatar">GT</div>
+                    <span>
+                        Xin chào, {{ session["user"]["full_name"] or session["user"]["username"] }}
+                    </span>
+
+                    <form method="POST" action="{{ url_for('logout') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="logout-btn">
+                            Đăng xuất
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+        <section class="section">
+
+            <div class="section-heading">
+                <div>
+                    <h3>Danh sách camera</h3>
+                    <p class="section-description">
+                        Tổng số camera đã cấu hình:
+                        <strong id="camera-count">{{ cameras|length }}</strong>
+                    </p>
+                </div>
+            </div>
+
+            <!-- NÚT THÊM CAMERA -->
+            <div class="camera-actions">
+                <button type="button"
+                        class="btn-add-camera"
+                        id="btn-show-form">
+                    + Thêm camera
+                </button>
+            </div>
+
+            <!-- FORM THÊM CAMERA -->
+            <div class="camera-form" id="camera-form">
+
+                <h3 id="camera-form-title">Thông tin camera mới</h3>
+
+                <form id="add-camera-form">
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label for="camera-name">Tên camera *</label>
+                            <input type="text"
+                                   id="camera-name"
+                                   placeholder="Ví dụ: Camera hành lang"
+                                   required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="camera-location">Vị trí</label>
+                            <input type="text"
+                                   id="camera-location"
+                                   placeholder="Ví dụ: Tầng 2">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="camera-type">Loại nguồn *</label>
+                            <select id="camera-type" required>
+                                <option value="camera">Camera cục bộ</option>
+                                <option value="rtsp">Camera RTSP</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="camera-source">Nguồn kết nối *</label>
+                            <input type="text"
+                                   id="camera-source"
+                                   placeholder="Ví dụ: 0 hoặc địa chỉ RTSP"
+                                   required>
+                        </div>
+
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="submit"
+                                class="btn-save"
+                                id="btn-save-camera">
+                            Lưu camera
+                        </button>
+
+                        <button type="button"
+                                class="btn-cancel"
+                                id="btn-cancel">
+                            Hủy
+                        </button>
+                    </div>
+
+                    <div id="form-message" class="form-message"></div>
+
+                </form>
+            </div>
+
+            <!-- DANH SÁCH CAMERA -->
+            <div class="table-wrapper">
+                <table class="alert-table">
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên camera</th>
+                            <th>Vị trí</th>
+                            <th>Loại nguồn</th>
+                            <th>Nguồn kết nối</th>
+                            <th>Trạng thái sử dụng</th>
+                            <th>Trạng thái kết nối</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="camera-list">
+
+                        {% for camera in cameras %}
+                        <tr>
+                            <td><strong>#{{ camera.id }}</strong></td>
+
+                            <td>{{ camera.name }}</td>
+
+                            <td>{{ camera.location or "Chưa xác định" }}</td>
+
+                            <td>
+                                {% if camera.source_type == "camera" %}
+                                    Camera cục bộ
+                                {% else %}
+                                    Camera RTSP
+                                {% endif %}
+                            </td>
+
+                            <td>{{ camera.source }}</td>
+
+                            <td>
+                                {% if camera.is_enabled %}
+                                    <span class="status-badge status-done">
+                                        Đang bật
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-new">
+                                        Đã tắt
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ camera.connection_status or "Chưa kiểm tra" }}
+                            </td>
+
+                            <td>
+                                <button
+                                    type="button"
+                                    class="btn-edit-camera"
+                                    data-id="{{ camera.id }}"
+                                    data-name="{{ camera.name }}"
+                                    data-location="{{ camera.location or '' }}"
+                                    data-type="{{ camera.source_type }}"
+                                    data-source="{{ camera.source }}">
+                                    Sửa
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="btn-delete-camera"
+                                    data-id="{{ camera.id }}"
+                                    data-name="{{ camera.name }}">
+                                    Xóa
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="btn-toggle-camera"
+                                    data-id="{{ camera.id }}"
+                                    data-enabled="{{ camera.is_enabled }}">
+                                    {% if camera.is_enabled %}
+                                        Tắt camera
+                                    {% else %}
+                                        Bật camera
+                                    {% endif %}
+                                </button>
+                            </td>
+                        </tr>
+
+                        {% else %}
+                        <tr id="empty-camera-row">
+                            <td colspan="7" class="no-data">
+                                <div class="empty-state">
+                                    <div class="empty-icon">📷</div>
+                                    <strong>Chưa có camera nào</strong>
+                                    <p>Hãy thêm camera để quản lý trong hệ thống.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <footer>
+            SCHOOL SAFETY AI · Hệ thống hỗ trợ giám sát an toàn học đường
+        </footer>
+
+    </main>
+
+    <script>
+        const csrfToken = document.querySelector(
+            'meta[name="csrf-token"]'
+        ).content;
+        const formContainer = document.getElementById("camera-form");
+        const addForm = document.getElementById("add-camera-form");
+        const messageBox = document.getElementById("form-message");
+        const saveButton = document.getElementById("btn-save-camera");
+        let editingCameraId = null;
+
+        // Hiển thị form
+        document.getElementById("btn-show-form").addEventListener("click", function () {
+            formContainer.classList.add("show");
+            messageBox.textContent = "";
+        });
+
+        // Đóng form
+        document.getElementById("btn-cancel").addEventListener("click", function () {
+
+            formContainer.classList.remove("show");
+
+            addForm.reset();
+
+            editingCameraId = null;
+
+            document.getElementById("camera-form-title").textContent =
+                "Thông tin camera mới";
+
+            saveButton.textContent = "Lưu camera";
+
+            messageBox.textContent = "";
+            messageBox.className = "form-message";
+        });
+
+        // Tạo một ô trong bảng an toàn
+        function createCell(value) {
+            const td = document.createElement("td");
+            td.textContent = value;
+            return td;
+        }
+
+        // Thêm camera mới vào bảng
+        function appendCamera(camera) {
+            const cameraList = document.getElementById("camera-list");
+
+            const emptyRow = document.getElementById("empty-camera-row");
+
+            if (emptyRow) {
+                emptyRow.remove();
+            }
+
+            const row = document.createElement("tr");
+
+            const idCell = document.createElement("td");
+            const idStrong = document.createElement("strong");
+            idStrong.textContent = "#" + camera.id;
+            idCell.appendChild(idStrong);
+            row.appendChild(idCell);
+
+            row.appendChild(createCell(camera.name));
+            row.appendChild(createCell(camera.location || "Chưa xác định"));
+
+            row.appendChild(createCell(
+                camera.source_type === "camera"
+                    ? "Camera cục bộ"
+                    : "Camera RTSP"
+            ));
+
+            row.appendChild(createCell(camera.source));
+
+            const enabledCell = document.createElement("td");
+            const enabledBadge = document.createElement("span");
+
+            enabledBadge.className = "status-badge status-done";
+            enabledBadge.textContent = "Đang bật";
+
+            enabledCell.appendChild(enabledBadge);
+            row.appendChild(enabledCell);
+
+            row.appendChild(createCell(
+                camera.connection_status || "CHUA_KIEM_TRA"
+            ));
+
+            // Cột thao tác
+            const actionCell = document.createElement("td");
+
+            // Nút sửa
+            const editButton = document.createElement("button");
+            editButton.type = "button";
+            editButton.className = "btn-edit-camera";
+            editButton.dataset.id = camera.id;
+            editButton.dataset.name = camera.name;
+            editButton.dataset.location = camera.location || "";
+            editButton.dataset.type = camera.source_type;
+            editButton.dataset.source = camera.source;
+            editButton.textContent = "Sửa";
+
+            actionCell.appendChild(editButton);
+
+            // Nút xóa
+            const deleteButton = document.createElement("button");
+
+            deleteButton.type = "button";
+            deleteButton.className = "btn-delete-camera";
+            deleteButton.dataset.id = camera.id;
+            deleteButton.dataset.name = camera.name;
+            deleteButton.textContent = "Xóa";
+
+            actionCell.appendChild(deleteButton);
+
+            // Nút bật/tắt
+            const toggleButton = document.createElement("button");
+            toggleButton.type = "button";
+            toggleButton.className = "btn-toggle-camera";
+            toggleButton.dataset.id = camera.id;
+            toggleButton.dataset.enabled = "1";
+            toggleButton.textContent = "Tắt camera";
+
+            actionCell.appendChild(toggleButton);
+
+            row.appendChild(actionCell);
+
+            // Cập nhật tổng số camera
+            const countElement = document.getElementById("camera-count");
+            countElement.textContent =
+                Number(countElement.textContent) + 1;
+        }
+
+        // Gửi dữ liệu đến API
+        // Thêm hoặc cập nhật camera
+        addForm.addEventListener("submit", async function (event) {
+
+            event.preventDefault();
+
+            const cameraData = {
+                name: document.getElementById("camera-name").value.trim(),
+                location: document.getElementById("camera-location").value.trim(),
+                source_type: document.getElementById("camera-type").value,
+                source: document.getElementById("camera-source").value.trim()
+            };
+
+            if (!cameraData.name || !cameraData.source) {
+                messageBox.textContent =
+                    "Vui lòng nhập đầy đủ tên và nguồn kết nối.";
+
+                messageBox.className = "form-message error";
+                return;
+            }
+
+            saveButton.disabled = true;
+            saveButton.textContent = "Đang xử lý...";
+
+            messageBox.textContent = "";
+
+            // Xác định thêm mới hay cập nhật
+            const isEditing = editingCameraId !== null;
+
+            const url = isEditing
+                ? `/api/cameras/${editingCameraId}`
+                : "/api/cameras";
+
+            const method = isEditing ? "PUT" : "POST";
+
+            try {
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: JSON.stringify(cameraData)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(
+                        result.message || "Không thể lưu thông tin camera."
+                    );
+                }
+
+                if (isEditing) {
+
+                    messageBox.textContent =
+                        "Cập nhật camera thành công!";
+
+                    messageBox.className = "form-message success";
+
+                    // Tải lại danh sách để lấy dữ liệu mới nhất
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 800);
+
+                } else {
+
+                    // Thêm camera mới vào bảng
+                    appendCamera({
+                        id: result.camera_id,
+                        ...cameraData,
+                        is_enabled: 1,
+                        connection_status: "CHUA_KIEM_TRA"
+                    });
+
+                    messageBox.textContent =
+                        "Thêm camera thành công!";
+
+                    messageBox.className = "form-message success";
+
+                    addForm.reset();
+
+                    setTimeout(function () {
+                        formContainer.classList.remove("show");
+                        messageBox.textContent = "";
+                    }, 1200);
+                }
+
+            } catch (error) {
+
+                messageBox.textContent = error.message;
+                messageBox.className = "form-message error";
+
+            } finally {
+
+                saveButton.disabled = false;
+
+                if (editingCameraId !== null) {
+                    saveButton.textContent = "Cập nhật camera";
+                } else {
+                    saveButton.textContent = "Lưu camera";
+                }
+            }
+        });
+
+        // Bật/tắt camera
+        document.getElementById("camera-list").addEventListener("click", async function (event) {
+
+            const button = event.target.closest(".btn-toggle-camera");
+
+            if (!button) return;
+
+            const cameraId = button.dataset.id;
+            const currentEnabled = button.dataset.enabled === "1";
+            const newEnabled = !currentEnabled;
+
+            button.disabled = true;
+
+            try {
+                const response = await fetch(
+                    `/api/cameras/${cameraId}/enabled`,
+                    {
+                        method: "PATCH",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken
+                        },
+                        body: JSON.stringify({
+                            is_enabled: newEnabled
+                        })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(
+                        result.message || "Không thể cập nhật trạng thái camera."
+                    );
+                }
+
+                // Cập nhật trạng thái trên giao diện
+                button.dataset.enabled = newEnabled ? "1" : "0";
+                button.textContent = newEnabled ? "Tắt camera" : "Bật camera";
+
+                const row = button.closest("tr");
+                const statusCell = row.cells[5];
+
+                const badge = document.createElement("span");
+
+                badge.className = newEnabled
+                    ? "status-badge status-done"
+                    : "status-badge status-new";
+
+                badge.textContent = newEnabled ? "Đang bật" : "Đã tắt";
+
+                statusCell.replaceChildren(badge);
+
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                button.disabled = false;
+            }
+        });
+        // Xử lý sự kiện nhấn nút Sửa
+        document.getElementById("camera-list").addEventListener("click", function (event) {
+
+            const button = event.target.closest(".btn-edit-camera");
+
+            if (!button) return;
+
+            // Lấy thông tin camera từ nút Sửa
+            editingCameraId = button.dataset.id;
+
+            document.getElementById("camera-name").value =
+                button.dataset.name;
+
+            document.getElementById("camera-location").value =
+                button.dataset.location;
+
+            document.getElementById("camera-type").value =
+                button.dataset.type;
+
+            document.getElementById("camera-source").value =
+                button.dataset.source;
+
+            // Chuyển biểu mẫu sang chế độ sửa
+            document.getElementById("camera-form-title").textContent =
+                "Cập nhật thông tin camera";
+
+            saveButton.textContent = "Cập nhật camera";
+
+            messageBox.textContent = "";
+            messageBox.className = "form-message";
+
+            formContainer.classList.add("show");
+
+            // Cuộn đến biểu mẫu
+            formContainer.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        });
+
+        // Xử lý xóa camera
+        document.getElementById("camera-list").addEventListener("click", async function (event) {
+
+            const button = event.target.closest(".btn-delete-camera");
+
+            if (!button) return;
+
+            const cameraId = button.dataset.id;
+            const cameraName = button.dataset.name;
+
+            // Xác nhận trước khi xóa
+            const confirmed = confirm(
+                `Bạn có chắc chắn muốn xóa camera "${cameraName}" không?\n\nThao tác này sẽ xóa cấu hình camera khỏi hệ thống.`
+            );
+
+            if (!confirmed) return;
+
+            button.disabled = true;
+
+            try {
+
+                const response = await fetch(
+                    `/api/cameras/${cameraId}`,
+                    {
+                        method: "DELETE",
+                        headers: {
+                            "X-CSRFToken": csrfToken
+                        }
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(
+                        result.message || "Không thể xóa camera."
+                    );
+                }
+
+                // Xóa dòng camera khỏi giao diện
+                const row = button.closest("tr");
+                row.remove();
+
+                // Cập nhật tổng số camera
+                const countElement = document.getElementById("camera-count");
+
+                countElement.textContent =
+                    Math.max(0, Number(countElement.textContent) - 1);
+
+                // Hiển thị trạng thái danh sách trống
+                const cameraList = document.getElementById("camera-list");
+
+                if (cameraList.children.length === 0) {
+
+                    const emptyRow = document.createElement("tr");
+                    emptyRow.id = "empty-camera-row";
+
+                    const emptyCell = document.createElement("td");
+                    emptyCell.colSpan = 8;
+                    emptyCell.className = "no-data";
+
+                    const emptyState = document.createElement("div");
+                    emptyState.className = "empty-state";
+
+                    const icon = document.createElement("div");
+                    icon.className = "empty-icon";
+                    icon.textContent = "📷";
+
+                    const title = document.createElement("strong");
+                    title.textContent = "Chưa có camera nào";
+
+                    const description = document.createElement("p");
+                    description.textContent =
+                        "Hãy thêm camera để quản lý trong hệ thống.";
+
+                    emptyState.append(icon, title, description);
+                    emptyCell.appendChild(emptyState);
+                    emptyRow.appendChild(emptyCell);
+
+                    cameraList.appendChild(emptyRow);
+                }
+
+                alert("Đã xóa camera thành công!");
+
+            } catch (error) {
+
+                alert(error.message);
+                button.disabled = false;
+
+            }
+        });
+    </script>
+
+</body>
+</html>
